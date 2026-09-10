@@ -1,0 +1,112 @@
+# =============================================================================
+# LangChain v1 stack - upgraded
+# =============================================================================
+# Core LangChain runtime (message types, runnables, tool interface) that every
+# page in this app builds on top of.
+langchain-core==1.4.0
+# Top-level LangChain package: chains/agents helpers used across the pages.
+langchain==1.3.4
+# Legacy (pre-v1) LangChain APIs some helper utilities still depend on.
+langchain-classic==1.0.7
+# Community-maintained integrations — used here for the FAISS vector store and
+# PDF loader in the RAG page.
+langchain-community==0.4.2
+# Text splitters (RecursiveCharacterTextSplitter) used to chunk PDFs for RAG.
+langchain-text-splitters==1.1.2
+# OpenAI chat model wrapper (ChatOpenAI) — powers every page's LLM calls.
+langchain-openai==1.2.2
+# Anthropic chat model wrapper — kept available for agents/pages that want to
+# run on Claude models instead of/alongside OpenAI.
+langchain-anthropic==1.4.4
+# Google Gemini chat model wrapper — same purpose as above, for Gemini models.
+langchain-google-genai==4.2.4
+# Graph-based agent runtime that LangChain's create_agent() and this project's
+# own Basic Chatbot StateGraph are built on.
+langgraph==1.2.4
+# Plotting library used by data-analysis tooling (charts for the Deep Agent's
+# analyze_data skill/tool).
+matplotlib==3.10.9
+
+# Deep Agent harness + Skills
+# Provides create_deep_agent(), the planning/file-workspace/Skills harness used
+# by the Deep Agent Skill Architecture page.
+deepagents==0.6.8
+
+# UI Framework
+# Renders the entire multi-page app (Home + all five module pages).
+streamlit>=1.28.0
+
+# Core Dependencies
+# Token counting for LangChain/OpenAI calls.
+tiktoken
+# Local vector store backing the RAG page's document search.
+faiss-cpu==1.12.0
+
+# Search feature
+# Tavily's Python client — the underlying SDK for live web search.
+tavily-python==0.7.1
+# LangChain's Tavily tool wrapper (TavilySearch) used by the Search-Enabled
+# Chat (Chatbot Agent) page for real-time web results.
+langchain-tavily==0.2.18
+
+# Document tools
+# Reads uploaded PDFs for the RAG page and the Deep Agent's read_pdf tool.
+pypdf>=6.2.0
+# Reads/writes .docx files for the Deep Agent's Word document tool.
+python-docx>=0.8.11
+# Reads/writes .xlsx files for the Deep Agent's Excel spreadsheet tool.
+openpyxl==3.1.5
+# Generates PDF files for the Deep Agent's create_pdf tool.
+fpdf2==2.8.7
+# Converts Markdown to HTML when building PDFs (create_pdf tool).
+markdown==3.10.2
+# Tabular data handling (DataFrames) for the RAG/Deep Agent data tools.
+pandas>=2.2.0
+
+# MCP (Model Context Protocol) Dependencies
+# Anthropic's Model Context Protocol client library — lets the MCP Agent page
+# connect to and call tools on external MCP servers (e.g. Zapier, Notion).
+# `mcp` is pinned because langchain-mcp-adapters==0.2.2 does not cap it, and
+# mcp>=2.0.0 renamed internals (RequestContext moved out of mcp.shared.context),
+# which breaks langchain_mcp_adapters.client on import ("cannot import name
+# 'RequestContext' from 'mcp.shared.context'"). Pin stays until adapters is upgraded.
+# LangChain's adapter layer that turns an MCP server's tools into LangChain
+# tools the agent can call — the bridge between MCP and create_agent().
+langchain-mcp-adapters==0.2.2
+mcp==1.29.0
+
+# Used for simple HTTP calls where a full LangChain/MCP client isn't needed.
+requests>=2.31.0
+
+# Research agent tools
+# Wikipedia lookup tool available to research-oriented agents.
+wikipedia>=1.4.0
+# arXiv paper search/lookup tool available to research-oriented agents.
+arxiv==2.2.0
+
+# Async support for Streamlit + MCP
+# Lets asyncio event loops be reused inside Streamlit's script-rerun model,
+# which the MCP Agent and Deep Agent pages need for their async tool calls.
+nest_asyncio==1.6.0
+
+# =============================================================================
+# Cross-exercise compatibility pins (not used by this project's own code)
+# =============================================================================
+# If this environment is shared with other bootcamp exercises, older installs of
+# these three packages conflict with the LangChain v1 stack above:
+#   - langchain-experimental 0.3.4 needs langchain-community<0.4.0 (this project pins 0.4.2)
+#   - openai-agents 0.2.10 needs openai<2 (this project resolves to openai>=2.4x via langchain-openai/mcp)
+#   - gradio 5.44.1 needs pydantic<2.12, which conflicts with openai-agents needing pydantic>=2.12.2
+# Pinning them here to versions verified compatible with everything above (tested with
+# `pip check` -> "No broken requirements found"). Remove this block if your environment
+# doesn't have these installed for another exercise.
+langchain-experimental==0.4.2
+openai-agents==0.20.0
+gradio==6.25.0
+
+# chromadb 1.0.12 hard-pins fastapi==0.115.9, which needs an old starlette (<0.46) that
+# cannot coexist with the newer starlette gradio==6.25.0 above requires (>=1.0.1) - no
+# fastapi version satisfies both, so this can only be fixed on the chromadb side. From
+# 1.1.0 onward chromadb only requires fastapi under its optional "dev" extra (not part of
+# a normal install), which removes the conflict entirely.
+chromadb==1.1.1
