@@ -59,8 +59,70 @@ _TOKENS_CSS = """
         --shadow-glow: 0 4px 14px rgba(99, 102, 241, 0.32);
     }
 
+    /* Dark mode: Streamlit auto-switches to its own dark theme whenever the
+       viewer's OS/browser prefers dark — with the app's menu hidden below,
+       viewers have no way to override that. Every rule in this file reads
+       colors from the tokens above, so redefining them here (and nowhere
+       else) re-themes the whole app for dark mode in one place, the same
+       way the light tokens do for light mode. */
+    @media (prefers-color-scheme: dark) {
+        :root {
+            --bg: #0e1117;
+            --bg-secondary: #161a23;
+            --bg-tertiary: #1e232e;
+            --border: #2d333f;
+            --border-subtle: #242932;
+            --text: #e6e8ec;
+            --text-secondary: #9aa1ad;
+            --text-tertiary: #6b7280;
+            --accent: #818cf8;
+            --accent-hover: #a5b4fc;
+            --accent-2: #a78bfa;
+            --accent-gradient: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+            --accent-soft-bg: rgba(129, 140, 248, 0.16);
+            --accent-soft-border: rgba(129, 140, 248, 0.38);
+            --success-bg: #103322;
+            --success-border: #1e5138;
+            --success-text: #4ade80;
+            --warn-bg: #2e2410;
+            --warn-border: #4d3d1a;
+            --warn-text: #fbbf24;
+            --danger-bg: #2e1414;
+            --danger-border: #4d1e1e;
+            --danger-text: #f87171;
+            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
+            --shadow-md: 0 8px 20px rgba(129, 140, 248, 0.2), 0 2px 8px rgba(0, 0, 0, 0.45);
+            --shadow-glow: 0 4px 16px rgba(129, 140, 248, 0.45);
+        }
+    }
+
     html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
     #MainMenu, footer { visibility: hidden; }
+    /* The page's own <body> element has a hardcoded white background that
+       Streamlit never repaints to match the app's theme — only .stApp gets
+       our --bg color. Left alone, this shows through as a stray white strip
+       wherever .stApp doesn't fully cover the viewport (e.g. behind the
+       docked chat-input bar at the bottom of chat pages) in dark mode. */
+    html, body { background-color: var(--bg) !important; }
+
+    /* Streamlit renders markdown text (chat messages, captions, plain
+       st.write/st.markdown content) with its own hardcoded text color that
+       is set once from the app's configured textColor and does NOT adapt to
+       the viewer's light/dark preference the way our own CSS does. These
+       rules put that text back under our token system in both modes;
+       links keep the accent color rather than picking up plain text color. */
+    [data-testid="stMarkdownContainer"] * { color: var(--text) !important; }
+    [data-testid="stMarkdownContainer"] a { color: var(--accent) !important; }
+    [data-testid="stCaptionContainer"], [data-testid="stCaptionContainer"] * {
+        color: var(--text-secondary) !important;
+    }
+    /* The user's chat bubble gets a fixed light tint from Streamlit by
+       default, regardless of theme — swap it for a themed one so it still
+       reads as "the other message" instead of a stray light box. */
+    [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) {
+        background-color: var(--bg-tertiary) !important;
+        border-radius: var(--radius) !important;
+    }
     /* keep the header transparent so the sidebar collapse arrow stays reachable */
     [data-testid="stHeader"] { background: transparent !important; box-shadow: none !important; }
     [data-testid="stAppDeployButton"] { display: none !important; }
@@ -72,14 +134,28 @@ _TOKENS_CSS = """
     [data-testid="stSidebar"] { background-color: var(--bg-secondary); border-right: 1px solid var(--border-subtle); }
 
     /* Page-nav links in the sidebar get a rounded hover/active highlight,
-       matching the rest of the rounded, colorful UI. */
+       matching the rest of the rounded, colorful UI. The label text sits in
+       nested spans/p tags that Streamlit gives their own hardcoded color
+       (not just inherited from the <a>), so the wildcard descendant
+       selectors below are what actually keep the label legible in dark
+       mode — targeting the <a> alone left the text unreadable. */
     [data-testid="stSidebarNav"] a, [data-testid="stSidebarNavLink"] {
         border-radius: var(--radius-sm) !important;
+        color: var(--text-secondary) !important;
         transition: background 120ms ease, color 120ms ease;
     }
-    [data-testid="stSidebarNav"] a:hover { background: var(--accent-soft-bg) !important; }
+    [data-testid="stSidebarNav"] a *, [data-testid="stSidebarNavLink"] * {
+        color: inherit !important;
+    }
+    [data-testid="stSidebarNav"] a:hover,
+    [data-testid="stSidebarNav"] a:hover * {
+        background: var(--accent-soft-bg) !important;
+        color: var(--accent-hover) !important;
+    }
     [data-testid="stSidebarNav"] a[aria-current="page"],
-    [data-testid="stSidebarNav"] a[aria-selected="true"] {
+    [data-testid="stSidebarNav"] a[aria-selected="true"],
+    [data-testid="stSidebarNav"] a[aria-current="page"] *,
+    [data-testid="stSidebarNav"] a[aria-selected="true"] * {
         background: var(--accent-soft-bg) !important;
         color: var(--accent-hover) !important;
         font-weight: 700 !important;
@@ -140,10 +216,41 @@ _TOKENS_CSS = """
     .stTextInput input, .stTextArea textarea {
         border-radius: var(--radius-sm) !important;
         border-color: var(--border) !important;
+        background: var(--bg) !important;
+        color: var(--text) !important;
     }
     .stTextInput input:focus, .stTextArea textarea:focus {
         border-color: var(--accent) !important;
         box-shadow: 0 0 0 3px var(--accent-soft-bg) !important;
+    }
+    /* The visible box AROUND a text input/chat input (its "root" wrapper) is
+       a separate element that Streamlit colors with the app's configured
+       secondaryBackgroundColor directly — a single static color that does
+       NOT follow the viewer's light/dark preference the way our own
+       token-based CSS does. Overriding it here keeps those boxes matched to
+       the current color scheme instead of staying a fixed light gray. */
+    [data-testid="stTextInputRootElement"],
+    [data-testid="stTextAreaRootElement"],
+    [data-testid="stNumberInputContainer"] {
+        background: var(--bg) !important;
+        border-color: var(--border) !important;
+    }
+    [data-testid="stChatInput"] div {
+        background-color: var(--bg) !important;
+    }
+    [data-testid="stChatInput"] {
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+    }
+    /* The docked bar that holds the chat-input box at the bottom of chat
+       pages has its own plain-white wrapper div (sits between stBottom and
+       stBottomBlockContainer) that isn't covered by .stApp's background —
+       it shows as a solid white bar across the bottom of the page in dark
+       mode. Force every layer of that docked region onto our theme. */
+    [data-testid="stBottom"],
+    [data-testid="stBottom"] > div,
+    [data-testid="stBottomBlockContainer"] {
+        background: var(--bg) !important;
     }
 
     div[data-testid="stExpander"] {
@@ -151,10 +258,23 @@ _TOKENS_CSS = """
         border-color: var(--border-subtle) !important;
         box-shadow: var(--shadow-sm);
     }
-    div[data-testid="stFileUploaderDropzone"] {
+    /* Streamlit renders the dropzone as a <section>, not a <div> — a
+       tag-qualified selector here silently never matches, leaving this
+       area on its static (light) default background in dark mode. */
+    [data-testid="stFileUploaderDropzone"] {
         border-radius: var(--radius) !important;
         background: var(--bg-secondary) !important;
         border: 1.5px dashed var(--border) !important;
+    }
+    [data-testid="stFileUploaderDropzone"] * { color: var(--text) !important; }
+    [data-testid="stFileUploaderDropzoneInstructions"] svg { fill: var(--text-secondary) !important; }
+    /* The "Browse files" button inside the dropzone is a native Streamlit
+       secondary button with its own hardcoded white background — same
+       static-color pattern as the other native widget chrome above. */
+    [data-testid="stFileUploaderDropzone"] button {
+        background: var(--bg) !important;
+        border: 1px solid var(--border) !important;
+        color: var(--text) !important;
     }
 
     /* Conversation-starter chips (utils/starters.py render_starters()) —
@@ -283,6 +403,7 @@ _HOME_CSS = """
         font-weight: 800;
         letter-spacing: -0.02em;
         margin-bottom: 0.35rem;
+        color: var(--accent);
         background: var(--accent-gradient);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -440,7 +561,7 @@ _DEEP_AGENT_EXTRA_CSS = """
     .todo-row { font-size:0.82rem; color: var(--text); padding:0.18rem 0; line-height:1.5; }
     .todo-row.done { color: var(--text-tertiary); text-decoration:line-through; }
     .dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:0.55rem; }
-    .d-done { background: var(--success-text); } .d-prog { background:#b5790f; } .d-todo { background: var(--border); }
+    .d-done { background: var(--success-text); } .d-prog { background: var(--warn-text); } .d-todo { background: var(--border); }
     .empty { color: var(--text-tertiary); font-size:0.8rem; }
     .stPopover > div > button {
         border-radius: var(--radius) !important; border:1px solid var(--border) !important;
